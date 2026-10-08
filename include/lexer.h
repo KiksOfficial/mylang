@@ -1,0 +1,25 @@
+#ifndef LEXER_H
+#define LEXER_H
+
+typedef enum {
+  TOKEN_NUMBER,
+  TOKEN_CHAR,
+
+  TOKEN_LCURLY,
+  TOKEN_RCURLY,
+
+  TOKEN_LBRACKET,
+  TOKEN_RBRACKET,
+
+  TOKEN_LSBRACET,
+  TOKEN_RSBRACKET,
+
+  TOKEN_COMA,
+  TOKEN_COLON,
+  TOKEN_SEMICOLON,
+
+  TOKEN_EOF
+
+} TokenType;
+
+#endif
