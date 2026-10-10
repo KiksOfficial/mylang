@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,18 +36,33 @@ char *read_file(const char *filename, size_t *size) {
   return file_buffer;
 }
 
+void check_string(TokenArray *token_arr, size_t **cursor) {
+  (*cursor)++;
+  size_t start = **cursor;
+
+  while (**cursor != '\0') {
+  }
+}
+
 int lexer() {
+  printf("lexer\n");
 
   size_t size;
   TokenArray *tokens = malloc(INITIAL_CAPACITY * sizeof(TokenArray));
 
+  tokens->items = malloc(INITIAL_CAPACITY * sizeof(Token));
+  tokens->size = 0;
+  tokens->capacity = INITIAL_CAPACITY;
+
   if (tokens->items == NULL) {
+    printf("tokens->items = null\n");
     return 1;
   }
 
   char *source = read_file("test.my", &size);
 
   if (source == NULL) {
+    printf("source = NULL\n");
     free(tokens);
     tokens = NULL;
     return 1;
@@ -54,6 +70,9 @@ int lexer() {
 
   for (size_t i = 0; i < size; i++) {
     char c = source[i];
+    if (isspace((unsigned char)c)) {
+      continue;
+    }
 
     switch (c) {
     case '{': {
@@ -66,9 +85,48 @@ int lexer() {
       push_token(token, tokens);
       break;
     }
+    case '(': {
+      Token token = {.type = TOKEN_LBRACKET, .value = "("};
+      push_token(token, tokens);
+      break;
+    }
+    case ')': {
+      Token token = {.type = TOKEN_LBRACKET, .value = ")"};
+      push_token(token, tokens);
+      break;
+    }
+    case '[': {
+      Token token = {.type = TOKEN_LSBRACKET, .value = "["};
+      push_token(token, tokens);
+      break;
+    }
+    case ']': {
+      Token token = {.type = TOKEN_RSBRACKET, .value = "]"};
+      push_token(token, tokens);
+      break;
+    }
+
+    case '.': {
+      Token token = {.type = TOKEN_COMA, .value = ","};
+      push_token(token, tokens);
+      break;
+    }
+
+    case ';': {
+      Token token = {.type = TOKEN_SEMICOLON, .value = ";"};
+      push_token(token, tokens);
+      break;
+    }
+    case ':': {
+      Token token = {.type = TOKEN_COLON, .value = ";"};
+      push_token(token, tokens);
+      break;
+    }
     }
   }
-  printf("tokens");
+  Token token = {.type = TOKEN_EOF, .value = "EOF"};
+  push_token(token, tokens);
+  printf("tokens\n");
   print_tokens(*tokens);
 
   return 0;
