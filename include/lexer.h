@@ -35,6 +35,23 @@ typedef enum {
   TOKEN_FUNC,
   TOKEN_RETURN,
 
+  TOKEN_I8,
+  TOKEN_I16,
+  TOKEN_I32,
+  TOKEN_I64,
+
+  TOKEN_U8,
+  TOKEN_U16,
+  TOKEN_U32,
+  TOKEN_U64,
+
+  TOKEN_STR,
+  TOKEN_CHAR,
+
+  TOKEN_IDENT,
+
+  TOKEN_BOOL,
+
   TOKEN_EOF
 
 } TokenType;
@@ -55,5 +72,6 @@ int parse_file(const char *filename);
 int push_token(Token token, TokenArray *token_array);
 int lexer();
 void print_tokens(TokenArray token_array);
+int get_i32(TokenArray *token_array, char **cursor);
 
 #endif

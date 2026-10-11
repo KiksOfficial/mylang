@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../include/lexer.h"
 
@@ -17,7 +18,7 @@ char *read_file(const char *filename, size_t *size) {
   long file_size = ftell(fptr); // get current file pointer
   fseek(fptr, 0, SEEK_SET);     // seek back to beginning of file
 
-  char *file_buffer = malloc(sizeof(file_size) + 1);
+  char *file_buffer = malloc((size_t)file_size + 1);
 
   if (file_buffer == NULL) {
 
@@ -36,16 +37,37 @@ char *read_file(const char *filename, size_t *size) {
   return file_buffer;
 }
 
-void check_string(TokenArray *token_arr, size_t **cursor) {
+int check_string(TokenArray *token_arr, char **cursor) {
   (*cursor)++;
-  size_t start = **cursor;
+  char *start = *cursor;
 
-  while (**cursor != '\0') {
+  while (**cursor != '\0' && **cursor != '"') {
+    (*cursor)++;
   }
+
+  size_t len = *cursor - start;
+
+  char *str_value = malloc(len + 1);
+  if (str_value == NULL) {
+    printf("str value = NULL\n");
+    return 1;
+  }
+
+  memcpy(str_value, start, len);
+  str_value[len] = '\0';
+
+  Token some_str =
+      (Token){.type = TOKEN_STRING, .len = len, .value = str_value};
+
+  if (**cursor == '"') {
+    (*cursor)++;
+  }
+
+  push_token(some_str, token_arr);
+  return 0;
 }
 
 int lexer() {
-  printf("lexer\n");
 
   size_t size;
   TokenArray *tokens = malloc(INITIAL_CAPACITY * sizeof(TokenArray));
@@ -67,14 +89,27 @@ int lexer() {
     tokens = NULL;
     return 1;
   }
+  char *cursor = source;
 
-  for (size_t i = 0; i < size; i++) {
-    char c = source[i];
-    if (isspace((unsigned char)c)) {
+  while (*cursor != '\0') {
+
+    if (*cursor == ' ' || *cursor == '\t' || *cursor == '\n' ||
+        *cursor == '\r') {
+      cursor++;
       continue;
     }
 
-    switch (c) {
+    if (*cursor == '"') {
+
+      check_string(tokens, &cursor);
+      continue;
+    }
+
+    if (*cursor == 'i') {
+      get_i32(tokens, &cursor);
+    }
+
+    switch (*cursor) {
     case '{': {
       Token token = {.type = TOKEN_LCURLY, .value = "{"};
       push_token(token, tokens);
@@ -91,7 +126,7 @@ int lexer() {
       break;
     }
     case ')': {
-      Token token = {.type = TOKEN_LBRACKET, .value = ")"};
+      Token token = {.type = TOKEN_RBRACKET, .value = ")"};
       push_token(token, tokens);
       break;
     }
@@ -118,11 +153,13 @@ int lexer() {
       break;
     }
     case ':': {
-      Token token = {.type = TOKEN_COLON, .value = ";"};
+      Token token = {.type = TOKEN_COLON, .value = ":"};
       push_token(token, tokens);
       break;
     }
     }
+
+    cursor++;
   }
   Token token = {.type = TOKEN_EOF, .value = "EOF"};
   push_token(token, tokens);
@@ -159,4 +196,20 @@ void print_tokens(TokenArray token_array) {
     printf("Token %zu -> Type: %d, Value: \"%s\"\n", i,
            token_array.items[i].type, token_array.items[i].value);
   }
+}
+
+int get_i32(TokenArray *token_array, char **cursor) {
+  char *start = *cursor;
+
+  if (strncmp(start, "i32", 3) != 0) {
+    return 1;
+  }
+
+  *cursor += 3;
+  size_t len = *cursor - start;
+
+  Token num = (Token){.type = TOKEN_I32, .len = len, .value = start};
+
+  push_token(num, token_array);
+  return 0;
 }
