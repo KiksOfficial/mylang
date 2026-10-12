@@ -111,44 +111,44 @@ int lexer() {
 
     switch (*cursor) {
     case '{': {
-      Token token = {.type = TOKEN_LCURLY, .value = "{"};
+      Token token = {.type = TOKEN_LCURLY, .len = 1, .value = "{"};
       push_token(token, tokens);
       break;
     }
     case '}': {
-      Token token = {.type = TOKEN_RCURLY, .value = "}"};
+      Token token = {.type = TOKEN_RCURLY, .len = 1, .value = "}"};
       push_token(token, tokens);
       break;
     }
     case '(': {
-      Token token = {.type = TOKEN_LBRACKET, .value = "("};
+      Token token = {.type = TOKEN_LBRACKET, .len = 1, .value = "("};
       push_token(token, tokens);
       break;
     }
     case ')': {
-      Token token = {.type = TOKEN_RBRACKET, .value = ")"};
+      Token token = {.type = TOKEN_RBRACKET, .len = 1, .value = ")"};
       push_token(token, tokens);
       break;
     }
     case '[': {
-      Token token = {.type = TOKEN_LSBRACKET, .value = "["};
+      Token token = {.type = TOKEN_LSBRACKET, .len = 1, .value = "["};
       push_token(token, tokens);
       break;
     }
     case ']': {
-      Token token = {.type = TOKEN_RSBRACKET, .value = "]"};
+      Token token = {.type = TOKEN_RSBRACKET, .len = 1, .value = "]"};
       push_token(token, tokens);
       break;
     }
 
     case '.': {
-      Token token = {.type = TOKEN_COMA, .value = ","};
+      Token token = {.type = TOKEN_COMA, .len = 1, .value = ","};
       push_token(token, tokens);
       break;
     }
 
     case ';': {
-      Token token = {.type = TOKEN_SEMICOLON, .value = ";"};
+      Token token = {.type = TOKEN_SEMICOLON, .len = 1, .value = ";"};
       push_token(token, tokens);
       break;
     }
@@ -161,7 +161,7 @@ int lexer() {
 
     cursor++;
   }
-  Token token = {.type = TOKEN_EOF, .value = "EOF"};
+  Token token = {.type = TOKEN_EOF, .len = 3, .value = "EOF"};
   push_token(token, tokens);
   printf("tokens\n");
   print_tokens(*tokens);
@@ -193,23 +193,29 @@ int push_token(Token token, TokenArray *token_array) {
 
 void print_tokens(TokenArray token_array) {
   for (size_t i = 0; i < token_array.size; i++) {
-    printf("Token %zu -> Type: %d, Value: \"%s\"\n", i,
-           token_array.items[i].type, token_array.items[i].value);
+    printf("Token %zu -> Type: %d, Value: \"%.*s\"\n", i,
+           token_array.items[i].type, (int)token_array.items[i].len,
+           token_array.items[i].value);
   }
 }
-
 int get_i32(TokenArray *token_array, char **cursor) {
   char *start = *cursor;
 
-  if (strncmp(start, "i32", 3) != 0) {
-    return 1;
+  if (strncmp(start, "i32", 3) == 0) {
+    *cursor += 3;
+    size_t len = *cursor - start;
+
+    Token num = (Token){.type = TOKEN_I32, .len = len, .value = start};
+    push_token(num, token_array);
+
+  } else if (strncmp(start, "u32", 3) == 0) {
+    *cursor += 3;
+
+    size_t len = *cursor - start;
+
+    Token num = (Token){.type = TOKEN_U32, .len = len, .value = start};
+    push_token(num, token_array);
   }
 
-  *cursor += 3;
-  size_t len = *cursor - start;
-
-  Token num = (Token){.type = TOKEN_I32, .len = len, .value = start};
-
-  push_token(num, token_array);
   return 0;
 }
