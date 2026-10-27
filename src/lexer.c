@@ -99,17 +99,17 @@ int lexer() {
       continue;
     }
 
-    if (*cursor == '"') {
-
+    switch (*cursor) {
+    case '0' ... '9':
+      get_num(&cursor, tokens);
+    case 'a' ... 'z':
+    case 'A' ... 'Z':
+    case '_':
+      get_var(tokens, &cursor);
+      continue;
+    case '"':
       check_string(tokens, &cursor);
       continue;
-    }
-
-    if (*cursor == 'i') {
-      get_i32(tokens, &cursor);
-    }
-
-    switch (*cursor) {
     case '{': {
       Token token = {.type = TOKEN_LCURLY, .len = 1, .value = "{"};
       push_token(token, tokens);
@@ -157,6 +157,11 @@ int lexer() {
       push_token(token, tokens);
       break;
     }
+    case '=': {
+      Token token = {.type = TOKEN_EQ, .len = 1, .value = "="};
+      push_token(token, tokens);
+      break;
+    }
     }
 
     cursor++;
@@ -198,24 +203,51 @@ void print_tokens(TokenArray token_array) {
            token_array.items[i].value);
   }
 }
-int get_i32(TokenArray *token_array, char **cursor) {
+
+int get_num(char **cursor, TokenArray *token_array) {
   char *start = *cursor;
 
-  if (strncmp(start, "i32", 3) == 0) {
-    *cursor += 3;
-    size_t len = *cursor - start;
-
-    Token num = (Token){.type = TOKEN_I32, .len = len, .value = start};
-    push_token(num, token_array);
-
-  } else if (strncmp(start, "u32", 3) == 0) {
-    *cursor += 3;
-
-    size_t len = *cursor - start;
-
-    Token num = (Token){.type = TOKEN_U32, .len = len, .value = start};
-    push_token(num, token_array);
+  while (isdigit((unsigned char)**cursor)) {
+    (*cursor)++;
   }
 
+  size_t len = *cursor - start;
+  if (len == 0) {
+    return 1;
+  }
+  char *num_value = malloc(len + 1);
+
+  if (num_value == NULL) {
+    return 1;
+  }
+
+  memcpy(num_value, start, len);
+  num_value[len] = '\0';
+
+  push_token((Token){.type = TOKEN_NUMBER, .value = num_value, .len = len},
+             token_array);
+
   return 0;
+}
+
+void get_var(TokenArray *token_array, char **cursor) {
+  char *start = *cursor;
+
+  while (isalnum((unsigned char)**cursor) || **cursor == '_') {
+    (*cursor)++;
+  }
+
+  size_t len = *cursor - start;
+  if (len == 0) {
+    return;
+  }
+
+  TokenType type = TOKEN_IDENT;
+  if (len == 3 && memcmp(start, "i32", 3) == 0) {
+    type = TOKEN_I32;
+  } else if (len == 3 && memcmp(start, "u32", 3) == 0) {
+    type = TOKEN_U32;
+  }
+
+  push_token((Token){.type = type, .len = len, .value = start}, token_array);
 }

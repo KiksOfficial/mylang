@@ -1,3 +1,5 @@
 "some code"
-i32 x = 14
+i32 i_minu_muutuja = 14
 ({[]})
+
+

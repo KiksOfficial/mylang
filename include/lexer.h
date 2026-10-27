@@ -72,6 +72,7 @@ int parse_file(const char *filename);
 int push_token(Token token, TokenArray *token_array);
 int lexer();
 void print_tokens(TokenArray token_array);
-int get_i32(TokenArray *token_array, char **cursor);
+void get_var(TokenArray *token_array, char **cursor);
+int get_num(char **cursor, TokenArray *token_array);
 
 #endif
