@@ -5,6 +5,8 @@ TARGET = mylang
 
 SRC = main.c \
       src/lexer.c \
+			src/parser.c \
+
 
 OBJ = $(SRC:.c=.o)
 
