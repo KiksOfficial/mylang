@@ -4,6 +4,8 @@
 #include "lexer.h"
 #include <stddef.h>
 
+typedef struct ASTNode ASTNode;
+
 typedef struct {
   TokenArray tokens;
   size_t index;
@@ -19,14 +21,14 @@ typedef enum {
 typedef struct ASTNode {
   NodeType type;
 
-  Token var_type;
-  Token init;
-  struct ASTNode *init;
+  Token token_type;
+  Token name;
+  struct ASTNode *ast_init; // token value
 
   ASTNode **children;
   size_t children_count;
 } ASTNode;
 
-ASTNode *parse_tokens(TokenArray *tokens);
+ASTNode *append_nodes(TokenArray *tokens);
 
 #endif

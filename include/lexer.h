@@ -70,7 +70,7 @@ typedef struct {
 
 int parse_file(const char *filename);
 int push_token(Token token, TokenArray *token_array);
-int lexer();
+TokenArray *lexer();
 void print_tokens(TokenArray token_array);
 void get_var(TokenArray *token_array, char **cursor);
 int get_num(char **cursor, TokenArray *token_array);

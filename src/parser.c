@@ -1,4 +1,6 @@
 #include "../include/parser.h"
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 Token parser_peek(Parser *p) { return p->tokens.items[p->index]; }
@@ -7,7 +9,7 @@ Token parser_advance(Parser *p) { return p->tokens.items[p->index++]; }
 
 int parser_check(Parser *p, TokenType type) {
   if (p->index >= p->tokens.size) {
-    return 0;
+    return 1;
   }
   return parser_peek(p).type == type;
 }
@@ -20,37 +22,46 @@ int parser_match(Parser *p, TokenType type) {
   return 1;
 }
 
-ASTNode *create_AST(ASTNode *left, Token value, ASTNode *right) {
+ASTNode *create_single_node(TokenArray *tokens, size_t *index) {
   ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
-
-  if (!node) {
+  if (node == NULL)
     return NULL;
+
+  Parser p = {.tokens = *tokens, .index = *index};
+
+  if (parser_match(&p, TOKEN_I32)) {
+    node->type = NODE_VAR_DECL;
+
+    if (parser_check(&p, TOKEN_IDENT)) {
+      node->name = parser_advance(&p);
+    } else {
+      free(node);
+      return NULL;
+    }
   }
 
-  node->left = left;
-  node->value = value;
-  node->right = right;
+  *index = p.index;
 
   return node;
 }
 
-void free_ast(ASTNode *node) {
-  if (node == NULL)
-    return;
+ASTNode *append_nodes(TokenArray *tokens) {
+  size_t index = 0;
 
-  free_ast(node->left);
-  free_ast(node->right);
+  ASTNode *root = malloc(sizeof(ASTNode));
+  root->children_count = 0;
+  root->type = NODE_PROGRAM;
+  root->children = NULL;
 
-  free(node);
-  node = NULL;
-}
-
-ASTNode *parse_tokens(TokenArray *tokens) {
-  ASTNode *root;
-  size_t current_index = 0;
-  while (current_index <= tokens->size) {
-    root->value = tokens->items[current_index];
+  while (index < tokens->size) {
+    ASTNode *child = malloc(sizeof(ASTNode));
+    if (child == NULL) {
+      break;
+    }
+    root->children_count++;
+    root->children =
+        realloc(root->children, root->children_count * sizeof(ASTNode));
+    root->children[root->children_count - 1] = child;
   }
-
   return root;
 }

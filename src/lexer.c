@@ -67,7 +67,7 @@ int check_string(TokenArray *token_arr, char **cursor) {
   return 0;
 }
 
-int lexer() {
+TokenArray *lexer() {
 
   size_t size;
   TokenArray *tokens = malloc(INITIAL_CAPACITY * sizeof(TokenArray));
@@ -78,7 +78,7 @@ int lexer() {
 
   if (tokens->items == NULL) {
     printf("tokens->items = null\n");
-    return 1;
+    return NULL;
   }
 
   char *source = read_file("test.my", &size);
@@ -87,7 +87,7 @@ int lexer() {
     printf("source = NULL\n");
     free(tokens);
     tokens = NULL;
-    return 1;
+    return NULL;
   }
   char *cursor = source;
 
@@ -171,7 +171,7 @@ int lexer() {
   printf("tokens\n");
   print_tokens(*tokens);
 
-  return 0;
+  return tokens;
 }
 
 int push_token(Token token, TokenArray *token_array) {
