@@ -9,7 +9,7 @@ Token parser_advance(Parser *p) { return p->tokens.items[p->index++]; }
 
 int parser_check(Parser *p, TokenType type) {
   if (p->index >= p->tokens.size) {
-    return 1;
+    return 0;
   }
   return parser_peek(p).type == type;
 }
@@ -17,9 +17,9 @@ int parser_check(Parser *p, TokenType type) {
 int parser_match(Parser *p, TokenType type) {
   if (parser_check(p, type)) {
     parser_advance(p);
-    return 0;
+    return 1;
   }
-  return 1;
+  return 0;
 }
 
 ASTNode *create_single_node(TokenArray *tokens, size_t *index) {
@@ -45,22 +45,34 @@ ASTNode *create_single_node(TokenArray *tokens, size_t *index) {
   return node;
 }
 
-ASTNode *append_nodes(TokenArray *tokens) {
+int make_AST(TokenArray *tokens) {
   size_t index = 0;
-
   ASTNode *root = malloc(sizeof(ASTNode));
+
+  ASTNode *outcome = append_nodes(tokens, &index, root);
+  return 0;
+}
+
+ASTNode *append_nodes(TokenArray *tokens, size_t *index, ASTNode *root) {
+
   root->children_count = 0;
   root->type = NODE_PROGRAM;
   root->children = NULL;
 
-  while (index < tokens->size) {
-    ASTNode *child = malloc(sizeof(ASTNode));
+  while (*index < tokens->size) {
+    ASTNode *child = create_single_node(tokens, index);
     if (child == NULL) {
-      break;
+      (*index)++;
+      continue;
     }
     root->children_count++;
-    root->children =
-        realloc(root->children, root->children_count * sizeof(ASTNode));
+
+    ASTNode **tmp =
+        realloc(root->children, root->children_count * sizeof(ASTNode *));
+    if (tmp == NULL)
+      return NULL;
+    root->children = tmp;
+
     root->children[root->children_count - 1] = child;
   }
   return root;

@@ -29,6 +29,7 @@ typedef struct ASTNode {
   size_t children_count;
 } ASTNode;
 
-ASTNode *append_nodes(TokenArray *tokens);
+ASTNode *append_nodes(TokenArray *tokens, size_t *index, ASTNode *root);
+int make_AST(TokenArray *tokens);
 
 #endif
