@@ -1,3 +1,5 @@
 *.o
 test.my
 mylang
+.DS_Store
+parsing
