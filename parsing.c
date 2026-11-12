@@ -1,5 +1,7 @@
 #include "mpc.h"
+#include <errno.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,6 +26,15 @@ void add_history(char *unused) {}
 #include <readline/history.h>
 #endif
 
+typedef struct {
+  int type;
+  long num;
+  int err;
+} lval;
+
+enum { LVAL_NUM, LVAL_ERR };
+enum { LERR_DIV_Z, LERR_BAD_OP, LERR_BAD_NUM };
+
 int my_strcmp(char *s1, char *s2) {
   while (*s1 != '\0' && *s2 != '\0') {
     if (*s1 == *s2) {
@@ -36,34 +47,56 @@ int my_strcmp(char *s1, char *s2) {
   return 0;
 }
 
-long eval_op(long x, char *op, long y) {
-  if (strcmp(op, "+") == 0) {
-    return x + y;
-  }
-  if (strcmp(op, "-") == 0) {
-    return x - y;
-  }
-  if (strcmp(op, "*") == 0) {
-    return x * y;
-  }
-  if (strcmp(op, "/") == 0) {
-    return x / y;
-  }
-  return 0;
+lval lval_num(long x) {
+  lval v;
+  v.type = LVAL_NUM;
+  v.num = x;
+  return v;
 }
 
-long eval(mpc_ast_t *t) {
+lval lval_err(int x) {
+  lval v;
+  v.type = LVAL_ERR;
+  v.err = x;
+  return v;
+}
+
+lval eval_op(lval x, char *op, lval y) {
+  if (x.type == LVAL_ERR) {
+    return x;
+  }
+  if (x.type == LVAL_ERR) {
+    return y;
+  }
+  if (strcmp(op, "+") == 0) {
+    return lval_num(x.num + y.num);
+  }
+  if (strcmp(op, "-") == 0) {
+    return lval_num(x.num - y.num);
+  }
+  if (strcmp(op, "*") == 0) {
+    return lval_num(x.num * y.num);
+  }
+  if (strcmp(op, "/") == 0) {
+    return y.num == 0 ? lval_err(LERR_DIV_Z) : lval_num(x.num / y.num);
+  }
+  return lval_err(LERR_BAD_OP);
+}
+
+lval eval(mpc_ast_t *t) {
 
   /* If tagged as number return it directly. */
   if (strstr(t->tag, "number")) {
-    return atoi(t->contents);
+    errno = 0;
+    long x = strtol(t->contents, NULL, 10);
+    return errno != ERANGE ? lval_num(x) : lval_err(LERR_BAD_NUM);
   }
 
   /* The operator is always second child. */
   char *op = t->children[1]->contents;
 
   /* We store the third child in `x` */
-  long x = eval(t->children[2]);
+  lval x = eval(t->children[2]);
 
   /* Iterate the remaining children and combining. */
   int i = 3;
@@ -74,6 +107,31 @@ long eval(mpc_ast_t *t) {
 
   return x;
 }
+
+void lval_print(lval v) {
+  switch (v.type) {
+  case LVAL_NUM:
+    printf("%li", v.num);
+    break;
+  case LVAL_ERR:
+    if (v.err == LERR_DIV_Z) {
+      printf("Error: Can Division By 0");
+    }
+    if (v.err == LERR_BAD_NUM) {
+      printf("Error: Invalid Number");
+    }
+    if (v.err == LERR_BAD_OP) {
+      printf("Eror: Invalid Operation");
+    }
+    break;
+  }
+}
+
+void lval_println(lval v) {
+  lval_print(v);
+  putchar('\n');
+};
+
 int num_of_nodes(mpc_ast_t *tree) {
   if (tree->children_num == 0) {
     return 1;
@@ -92,19 +150,20 @@ int main() {
 
   /* Create Some Parsers */
   mpcp *Number = mpc_new("number");
-  mpcp *Operator = mpc_new("operator");
+  mpcp *Symbol = mpc_new("symbol");
+  mpcp *Sexpr = mpc_new("sexpr");
   mpcp *Expr = mpc_new("expr");
   mpcp *Lispy = mpc_new("lispy");
 
   /* Define them with the following Language */
-  mpca_lang(MPCA_LANG_DEFAULT,
-            "                                                     \
-    number   : /-?[0-9]+/ ;                             \
-    operator : '+' | '-' | '*' | '/' ;                  \
-    expr     : <number> | '(' <operator> <expr>+ ')' ;  \
-    lispy    : /^/ <operator> <expr>+ /$/ ;             \
+  mpca_lang(MPCA_LANG_DEFAULT, "                                          \
+    number : /-?[0-9]+/ ;                    \
+    symbol : '+' | '-' | '*' | '/' ;         \
+    sexpr  : '(' <expr>* ')' ;               \
+    expr   : <number> | <symbol> | <sexpr> ; \
+    lispy  : /^/ <expr>* /$/ ;               \
   ",
-            Number, Operator, Expr, Lispy);
+            Number, Symbol, Sexpr, Expr, Lispy);
 
   // static char buffer[1024];
   printf("Lisp version 0.0.0.1\n");
@@ -121,8 +180,9 @@ int main() {
 
     mpc_result_t r;
     if (mpc_parse("<stdin>", sisend, Lispy, &r)) {
-      long result = eval(r.output);
-      printf("%li\n", result);
+      lval result = eval(r.output);
+
+      lval_println(result);
       mpc_ast_delete(r.output);
 
     } else {
@@ -133,7 +193,7 @@ int main() {
     sisend = NULL;
   }
 
-  mpc_cleanup(4, Number, Operator, Expr, Lispy);
+  mpc_cleanup(5, Number, Symbol, Sexpr, Expr, Lispy);
 }
 
 // static makes this var local to the file
